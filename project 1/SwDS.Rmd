@@ -1,0 +1,1615 @@
+---
+output: 
+  bookdown::pdf_document2
+toc: false
+number_sections: true
+
+documentclass: article
+classoption:
+  - twoside
+  - 11pt
+fontsize: 11pt
+header-includes:
+- \usepackage{geometry}
+- \usepackage{enumerate}
+- \usepackage{latexsym,booktabs}
+- \usepackage{amsmath,amssymb}
+- \usepackage{graphicx}
+- \usepackage{hyperref}
+- \usepackage[singlespacing]{setspace}
+- \usepackage{calc}
+- \geometry{a4paper,left=2cm,right=2.0cm, top=2cm, bottom=2.0cm}
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{wrapfig}
+- \usepackage{float}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable} 
+- \usepackage{threeparttablex} 
+- \usepackage[normalem]{ulem} 
+- \usepackage{makecell}
+- \usepackage{xcolor}
+- \newtheorem{Definition}{Definition}
+- \newtheorem{Theorem}{Theorem}
+- \newtheorem{Lemma}{Lemma}
+- \newtheorem{Corollary}{Corollary}
+- \newtheorem{Proposition}{Proposition}
+- \newtheorem{Algorithm}{Algorithm}
+- \numberwithin{Theorem}{section}
+- \numberwithin{Definition}{section}
+- \numberwithin{Lemma}{section}
+- \numberwithin{Algorithm}{section}
+- \numberwithin{equation}{section}
+- \newcommand{\dottedline}[1]{\makebox[#1]{.\dotfill}}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      eval = TRUE,
+                      message = FALSE, 
+                      warning = FALSE,
+                      comment = NA,
+                      cache = TRUE)
+#Setting this TRUE will include all code chunks in the PDF
+print.all.code = FALSE
+```
+
+```{r packages}
+# Load Packages
+library(ETAS.inlabru)
+library(tidyverse)
+library(furrr)
+library(scales)
+library(knitr)
+library()
+if (!require("kableExtra"))
+{
+  install.packages("kableExtra")
+  library(kableExtra)
+}
+```
+
+```{r}
+# Parallel Setting
+num.cores <- ceiling(parallel::detectCores()*0.8)
+future::plan(future::multisession, workers = num.cores)
+INLA::inla.setOption(num.threads = num.cores)
+```
+
+```{=latex}
+\pagestyle{empty}
+
+% =============================================================================
+% Title page
+% =============================================================================
+\begin{titlepage}
+\vspace*{.5em}
+\center
+\textbf{\Large{The School of Mathematics}} \\
+\vspace*{1em}
+\begin{figure}[!h]
+\centering
+\includegraphics[width=180pt]{CentredLogoCMYK.jpg}
+\end{figure}
+\vspace{2em}
+\textbf{\Huge{Research on the Reliability of Earthquake Forecast Using the ETAS Model}}\\[2em]
+\textbf{\LARGE{by}}\\
+\vspace{2em}
+\textbf{\LARGE{Haoyang Jiao}}\\
+\vspace{6.5em}
+\Large{Dissertation Presented for the Degree of\\
+MSc in Statistics with Data Science}\\
+\vspace{6.5em}
+\Large{July 2024}\\
+\vspace{3em}
+\Large{Supervised by\\Dr Finn Lindgren, Dr Francesco Serafini and Dr Xindi Song}
+\vfill
+\end{titlepage}
+
+\cleardoublepage
+
+% =============================================================================
+% Executive summary, acknowledgments, and own work declaration
+% =============================================================================
+\begin{center}
+\Large{Executive Summary}
+\end{center}
+
+This research paper investigates the accuracy and reliability of the Epidemic-Type Aftershock Sequence (ETAS) model, a specific instance of the Hawkes process model, in forecasting future earthquake events. The study utilizes the R-package ETAS.inlabru developed at the University of Edinburgh and focuses on synthetic data generated from known parameters to control for confounding factors.
+
+Key findings:
+
+- Model Performance: The ETAS model demonstrates good performance in forecasting future earthquake events, with an average deviation of 3.65% between forecasts and true values, and a correlation of 0.96.
+
+- Data Quality Impact: Catalogs containing more diverse high-magnitude events or higher-magnitude events improve parameter estimation reliability, particularly for the $\alpha$ parameter.
+
+- Initial Parameter Values: Correct setting of initial values for certain parameters ($\mu$ and $p$, or combinations including $\alpha$, $c$, and $K$) leads to more accurate posterior distributions of all model parameters.
+
+- Catalog Characteristics: Larger catalogs with more events, especially large events, result in more reliable parameter estimation across all model parameters.
+
+- Forecasting Accuracy: The model's forecast precision gradually decreases as the forecasting period extends.
+
+- Model Reliability: The near-identical empirical distribution of "time between events" in synthetic catalogs from estimated and known parameters indicates high reliability of the ETAS model fitted using the INLA method.
+
+This research contributes to understanding the ETAS model's effectiveness in earthquake forecasting and identifies key factors influencing its reliability. These findings have significant implications for improving earthquake prediction capabilities, which are crucial for disaster prevention, economic security, and social stability.
+
+
+
+\begin{center}
+\Large{Acknowledgments}
+\end{center}
+
+I am grateful to the supervisors of this project, Dr Finn Lindgren, Dr Daniel Paulin, Dr Xindi Song and Dr Man Ho Suen, for their support and valuable advice. I would also like to thank Dr Francesco Serafini for his articles and tutorials, which give me a lot of help.
+
+\clearpage
+
+\begin{center}
+\Large{University of Edinburgh – Own Work Declaration}
+\end{center}
+
+
+This sheet must be filled in, signed and dated - your work will not be marked unless this is done.
+% Replace the commands \dottedline{8cm}, %\dottedline{6cm}, etc. with you name, Matriculation 
+% Number, etc.
+\vspace{1cm}
+
+Name: Haoyang Jiao
+
+Matriculation Number: s2333015
+
+Title of work: Research on the Reliability of Earthquake Forecast Using ETAS Model
+
+\vspace{1cm}
+
+I confirm that all this work is my own except where indicated, and that I have:
+\begin{itemize}
+\item	Clearly referenced/listed all sources as appropriate	 				
+\item	Referenced and put in inverted commas all quoted text (from books, web, etc)	
+\item	Given the sources of all pictures, data etc. that are not my own				
+\item	Not made any use of the report(s) or essay(s) of any other student(s) either past 	
+or present	
+\item	Not sought or used the help of any external professional academic agencies for the work
+\item	Acknowledged in appropriate places any help that I have received from others	(e.g. fellow students, technicians, statisticians, external sources)
+\item	Complied with any other plagiarism criteria specified in the Course handbook
+\end{itemize}
+
+I understand that any false claim for this work will be penalised in accordance with
+the University regulations	(\url{https://teaching.maths.ed.ac.uk/main/msc-students/msc-programmes/statistics/data-science/assessment/academic-misconduct}).								
+
+\vspace{1cm}
+
+Signature
+
+\includegraphics[width=150pt]{signature.jpg}
+
+%Include your signature as an image with the
+%\includegraphics command 
+%(see an example later in the document)
+
+\vspace{5mm}
+
+Date 2024-07-09
+
+
+\clearpage
+
+
+
+% =============================================================================
+% Table of contents, tables, and pictures (if applicable)
+% =============================================================================
+\pagestyle{plain}
+\setcounter{page}{1}
+\pagenumbering{Roman}
+\tableofcontents
+\clearpage
+\listoftables
+\listoffigures
+\cleardoublepage
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\nocite{*}
+\bibliographystyle{abbrv}
+\clearpage
+```
+
+# Introduction
+
+Accurately predicting future earthquake events through the integration of geophysical insight and statistical modeling is of great importance for improving the disaster prevention and mitigation capabilities of the nation and individuals, protecting economic security, maintaining social stability, and promoting related scientific research. When constructing such an earthquake forecasting model for a specific region, factors to be considered include the local geological structure, historical earthquake records, and the potential patterns about how "mainshocks" generate "aftershocks". 
+
+The Poisson process model is a classical statistical model applied to time and spatial point data, which assumes the data points are independent, conditionally on an intensity process. However, what we are more concerned about is the ability to predict future "aftershocks" based on the historical "mainshocks", so we need to extend the Poisson process model by using the Hawkes process model, which can predict the magnitude and number of future earthquakes based on the magnitude and number of past earthquakes.
+
+The focus of this paper's research is the accuracy and reliability of the Hawkes process model in forecasting future earthquake events. Specifically, this paper, based on the R-package `ETAS.inlabru` developed at the University of Edinburgh for the Epidemic-Type Aftershock Sequence (ETAS) model, which is a particular instance of the Hawkes process model, investigates the number of different high magnitude events and the level of these magnitudes required for effective estimation of model parameters, the impact of the initial values of model parameters on the reliability of the estimated parameter values, the relationship between the posterior distribution of model parameters and the characteristics of the earthquake sequence, the accuracy of the model's prediction of the number of future earthquake events, and the difference in the empirical distribution of "time between events" between synthetic data from known parameters and synthetic data from estimated parameters. By addressing these questions, we can clearly determine the accuracy and reliability of the ETAS model in forecasting future earthquake events, as well as identify the types of earthquake sequence data that is needed to provide reliable estimates of the model parameters.
+
+It is important to note that in the research process, we did not use real data, but rather assumed the model parameters were known beforehand, and then used these parameters to simulate a large number of synthetic catalogs, and assumed these parameters and the generated earthquake data were true. The advantage of this approach is that it allows us to control for additional confounding factors during the analysis. By varying the specified influencing factors, we can observe the changes in the posterior distribution of the model parameters, effectively eliminating the influence of other factors. This enables us to clearly determine the impact of the specified influencing factors on the posterior distribution of the model parameters.
+
+\newpage
+
+# Methods
+
+## Models
+
+The Epidemic-Type Aftershock Sequence (ETAS) model belongs to the family of Hawkes point processes. The temporal Hawkes process is a point process model with conditional intensity given by
+
+$$\lambda(t|H_t) = \mu + \sum_{t_h\in H_t}{g(t-t_h)}$$
+
+where $H_t$ is the history of the process up to time $t$. Generally speaking, $H_t$ contains all the events occurred before $t$. The quantity $\mu>0$ is usually called the background rate, and is interpreted as the rate at which events occur spontaneously. The function $g(t-t_h)$ is called triggering function and measures the influence of having an event in $t_h$ on time $t$. If we look at $g(t-t_h)$ as a function of $t$ is the intensity of the point process representing the offspring of the event in $t_h$. In essence, an Hawkes process model can be seen as the superposition of a background process with intensity $\mu$ and all the aftershock processes generated by the observations in $H_t$ each one with intensity $g(t-t_h)$. This makes Hawkes process model particularly suitable to describe phenomena in which an event has the ability to trigger additional events, phenomena characterized by cascades of events such as earthquakes, infectious diseases, wildfires, financial crisis, and similar.
+
+The ETAS model is a particular instance of Hawkes process model which has proven to be particularly suitable to model earthquake occurrence. Earthquakes are usually described and modelled as marked time points where the marking variable is the magnitude of the event. So the history of the process is composed by time-magnitude pairs $\{(t_h,m_h),h=1,\cdots,N_h\}$. Various slightly different ETAS formulations exist, usually characterized by slightly different triggering functions, the one that is implemented in the `ETAS.inlabru` R-package has conditional intensity given by
+
+$$\lambda(t|H_t)=\mu+\sum_{t_h\in H_t}{K\exp\{\alpha(m_h-M_0)\}\left(\frac{t-t_h}{c}+1\right)^{-p}}$$
+
+where $M_0$ is the cutoff magnitude such that $m_h\ge M_0$ for any $h$. This value is decided a priori based on the quality of the catalogue used.
+
+The parameters of the model are:
+
+- $\mu\ge 0$, the background rate.
+
+- $K\ge 0$, a general productivity parameter, it plays a role in determining the average number of aftershocks induced by any event in the catalogue.
+
+- $\alpha\ge 0$, a magnitude scaling parameter, it determines how the number of aftershocks changes based on the magnitude of the event generating the aftershocks. It has to be non-negative to reflect the fact that stronger earthquakes generate more aftershocks.
+
+- $c>0$, a time offset parameter, smaller values are associated with catalogues with fewer missing events.
+
+- $p>1$, an aftershock decay parameter, it determines the rate at which the aftershock activity decreases over time. It has to be greater than 1 otherwise an event may generate an infinite number of aftershocks in an infinite interval of time which is thought to be unphysical.
+
+As any other Bayesian analysis we need to decide the priors of the parameters. The approximation method that we use considers the parameters in two different scales: the original ETAS scale, and the internal scale. The internal scale is used by `ETAS.inlabru` package to perform the calculations. In the internal scale the parameters does not have any constraint and have a standard normal distribution as prior. We need to set up the priors for the parameters in the ETAS scale. This is done by considering a copula transformation $\eta(X)$ such that if $X\sim N(0,1)$ then, $\eta(X)$ has the desired distribution. For all models fitted in this paper, the prior distributions of the parameters were set as:
+
+$$\mu \sim \Gamma(0.3,0.6)$$
+
+$$K,\alpha,c \sim Unif(0,10)$$
+
+$$p \sim Unif(1,10)$$
+
+```{r}
+# set copula transformations list
+link.f <- list(
+  mu = \(x) gamma_t(x, 0.3, 0.6),
+  K = \(x) unif_t(x, 0, 10),
+  alpha = \(x) unif_t(x, 0, 10),
+  c_ = \(x) unif_t(x, 0, 10),
+  p = \(x) unif_t(x, 1, 10)
+)
+```
+
+```{r}
+# set inverse copula transformations list
+inv.link.f <- list(
+  mu = \(x) inv_gamma_t(x, 0.3, 0.6),
+  K = \(x) inv_unif_t(x, 0, 10),
+  alpha = \(x) inv_unif_t(x, 0, 10),
+  c_ = \(x) inv_unif_t(x, 0, 10),
+  p = \(x) inv_unif_t(x, 1, 10)
+)
+```
+
+The true values of the ETAS parameters were set as $\mu=0.301, K=0.136, \alpha=2.439, c=0.071, p=1.178$.
+
+```{r}
+# set true ETAS parameters
+true.param <- list(mu = 0.30106014,
+                   K = 0.13611399,
+                   alpha = 2.43945301,
+                   c = 0.07098607,
+                   p = 1.17838741)
+```
+
+## Techniques
+
+**1 Generate catalogues**
+
+When simulating the data, we are actually generating synthetic catalogues from a temporal ETAS model with fixed parameters spanning a given interval of time. The information that needs to be considered includes the true values of the ETAS parameters $\pmb{\theta}$, the parameter of the magnitude distribution $\beta$, the cutoff magnitude $M_0$, the starting time and end time of the catalogues and the set of known events. Unless otherwise specified, we uniformly set $\beta$ to 2.353, $M_0$ to 2.5, and the starting time and end time of the catalogues to 0 and 365, respectively.
+
+```{r}
+# set magnitude distribution parameter
+beta.p <- 2.353157
+
+# set cutoff magnitude
+M0 <- 2.5
+
+# set starting time of the synthetic catalogue
+T1 <- 0
+
+# set end time of the synthetic catalogue
+T2 <- 365
+```
+
+**2 Hawkes process log-likelihood approximation**
+
+Hawkes process log-likelihood approximation technique allows us to express the Hawkes process log-likelihood as a sum of linear functions of the parameters $\pmb{\theta}$. The log-likelihood can be decomposed into three main components:
+
+$$L(\pmb{\theta})=-\Lambda_0(\chi)-\sum_{h=1}^{n}{\Lambda_h(\chi)}+SL(H)$$
+
+The expected number of background events $\Lambda_0(\chi)$, the expected number of induced events $\sum_{h=1}^{n}{\Lambda_h(\chi)}$, and the sum of the log-intensities $SL(H)$.
+
+The technique used for Hawkes process log-likelihood approximation is based on approximating these three components separately. The approximation in `ETAS.inlabru` package is performed with respect to the mode of the posterior distribution $\pmb{\theta}^*$, which is determined by an iterative algorithm. The algorithm starts from a linearisation point $\pmb{\theta}^*_0$, finds the mode of the linearised (with respect to $\pmb{\theta}^*_0$) posterior using the INLA method, namely $\overline{\pmb{\theta}}^*_1$, the value of the linearisation point is updated to $\pmb{\theta}^*_1=\alpha\pmb{\theta}^*_0+(1-\alpha)\overline{\pmb{\theta}}^*_1$. This process is repeated until, for each parameter, the difference between two consecutive linearization points is less than 1% of the marginal posterior standard deviation. The value 1% is the default value used by the R-package `ETAS.inlabru`. In addition, if the number of iterations exceeds the set maximum number of iterations, it means the algorithm has not converged. Unless otherwise specified, the initial value of parameters $\pmb{\theta}^*_0$ were set as $\mu_0=0.5, K_0=0.1, \alpha_0=1, c_0=0.1, p_0=1.1$, and the maximum number of iterations was set to be 100. During the iteration process, the parameters of the binning strategy used were uniformly set to $\delta=1, \Delta=0.1, n_{max}=5$.
+
+\newpage
+
+# Results
+
+```{r}
+dir.create('rds')
+```
+
+The following are five research questions of interest to me. Unless otherwise specified, the setting used are the same as those mentioned earlier, such as the model parameters used for generating synthetic catalogs, the parameter of the magnitude distribution $\beta$, the cutoff magnitude $M_0$, the time range, and the parameters of the binning strategy $\delta, \Delta, n_{max}$ used for fitting the model.
+
+## Relationship between estimates of $\alpha$ and number of different high magnitude events
+
+Theoretically speaking, increasing the number of different high magnitude events will lead to better estimates of $\alpha$ (which regulates how the number of event offspring scales with the magnitude), as opposed to having the same number of high magnitude events but all with the same magnitude.
+
+To study how the posterior distribution for $\alpha$ changes with the number of different high magnitude events, and the level of these magnitudes, I conducted several simulation experiments. Specifically, I defined three categories of historical known events, corresponding to 1, 2, and 3 events, respectively. The 1 event occurred at the midpoint of the catalogue's starting time and end time, i.e., $\frac{0+365}{2}=182.5$; the 2 known events occurred at the $\frac{1}{3}$ and $\frac{2}{3}$ quantiles of the catalogue's starting time and end time, i.e., 121.6667 and 243.3333; the 3 known events occurred at the $\frac{1}{4}$, $\frac{2}{4}$, and $\frac{3}{4}$ quantiles of the catalogue's starting time and end time, i.e., 91.25, 182.50, and 273.75. The magnitudes were set to 4, 4.25, 4.50, ..., 5.75, 6, for each case, I randomly sampled some random numbers from the range $[magnitude-0.25,magnitude+0.25]$, where the number of random numbers was equal to the number of historical known events. This resulted in 27 historical known events and, consequently, 27 synthetic catalogues, for which 27 ETAS models were fitted. The experimental results showed that the algorithm of each ETAS model converged.
+
+```{r}
+# set up list of initial values
+th.init1 <- list(
+  th.mu = inv.link.f$mu(0.5),
+  th.K = inv.link.f$K(0.1),
+  th.alpha = inv.link.f$alpha(1),
+  th.c = inv.link.f$c_(0.1),
+  th.p = inv.link.f$p(1.1)
+)
+```
+
+```{r}
+# set up list of bru options
+bru.opt.list1 <- list(
+  bru_verbose = 0, # type of visual output
+  bru_max_iter = 100, # maximum number of iterations
+  bru_initial = th.init1 # parameters initial values
+)
+```
+
+```{r}
+# set up data.frame of imposed events
+set.seed(1)
+magnitude_n_grid <- expand_grid(magnitudes = seq(4,6,0.25), n = 1:3)
+Ht_list1 <- map(.x = 1:nrow(magnitude_n_grid),
+                .f = function(i){
+                  data.frame(ts = quantile(x = c(T1,T2), probs = (1:magnitude_n_grid$n[i])/(magnitude_n_grid$n[i] + 1)),
+                             magnitudes = runif(n = magnitude_n_grid$n[i],
+                                                min = magnitude_n_grid$magnitudes[i]-0.25,
+                                                max = magnitude_n_grid$magnitudes[i]+0.25))})
+```
+
+```{r}
+# generate the catalogue - it returns a list of data.frames
+set.seed(1)
+plan(multisession, workers = num.cores)
+synth.cat.list1 <- future_map(.x = Ht_list1,
+                              .f = ~generate_temporal_ETAS_synthetic(theta = true.param,
+                                                                     beta.p = beta.p,
+                                                                     M0 = M0,
+                                                                     T1 = T1,
+                                                                     T2 = T2,
+                                                                     Ht = .x),
+                              .progress = FALSE)
+```
+
+```{r}
+# transform each catalogue in a data.frame
+synth.cat.df1 <- map(.x = synth.cat.list1,
+                     .f = function(x){
+                       list_rbind(x) |> 
+                         arrange(ts) |> 
+                         mutate(idx.p = row_number())},
+                     .progress = FALSE)
+```
+
+```{r eval=FALSE}
+# fit models for each catalogue
+set.seed(1)
+plan(multisession, workers = num.cores)
+synth.fit.1 <- future_map(.x = synth.cat.df1,
+                          .f = ~Temporal.ETAS(
+                            total.data = .x,
+                            M0 = M0,
+                            T1 = T1,
+                            T2 = T2,
+                            link.functions = link.f,
+                            coef.t. = 1,
+                            delta.t. = 0.1,
+                            N.max. = 5,
+                            bru.opt = bru.opt.list1),
+                          .progress = FALSE)
+write_rds(synth.fit.1,'rds/synth.fit.1.rds')
+```
+
+```{r}
+synth.fit.1 <- read_rds('rds/synth.fit.1.rds')
+```
+
+```{r}
+# create input list to explore model outputs
+input_list1 <- map(.x = synth.fit.1,
+                   .f = ~list(model.fit = .x,
+                              link.functions = link.f))
+```
+
+```{r}
+# retrieve marginal posterior distributions for alpha
+post.list1 <- map(.x = input_list1,
+                  .f = get_posterior_param)
+
+post.alpha.list1 <- map2(.x = post.list1,
+                         .y = 1:nrow(magnitude_n_grid),
+                         .f = function(.x,.y){
+                           .x$post.df |>
+                             filter(param=='alpha') |>
+                             mutate(magnitudes = magnitude_n_grid$magnitudes[.y],
+                                    n = magnitude_n_grid$n[.y])
+                           })
+
+# bind marginal posterior data.frames
+post.alpha.df1 <- list_rbind(post.alpha.list1)
+```
+
+```{r fig.width=7, fig.height=3.5, fig.cap='Posterior distribution of alpha versus number of different high magnitude events and the level of magnitudes'}
+# visualization
+ggplot(data = post.alpha.df1) +
+  geom_line(mapping = aes(x = x,
+                          y = y,
+                          color = as_factor(magnitudes))) +
+  geom_vline(xintercept = true.param$alpha, linetype = 2) +
+  scale_color_viridis_d() +
+  facet_wrap(~n) +
+  labs(x = expression(alpha),
+       y = 'PDF',
+       color = 'Magnitude') +
+  theme(legend.position = 'bottom') +
+  theme_bw()
+```
+
+The posterior distributions of $\alpha$ for each scenario are shown in Figure 1. The 3 panels in Figure 1 correspond to different numbers of historical known events, and different colors correspond to different magnitudes, with colors tending towards yellow indicating higher magnitudes and colors tending towards deep purple indicating lower magnitudes. The vertical black dashed lines represent the true value of $\alpha$. On one hand, regardless of the number of historical known events, within the same panel, as the level of magnitudes increases, the standard deviation of the posterior distribution of $\alpha$ exhibits a decreasing trend, and their means seem to be closer to the true parameter value. On the other hand, given a certain magnitude, especially a high magnitude, across different panels, as the number of historical known events increases, the standard deviation of the posterior distribution of $\alpha$ seems to decrease, and their means seem to be closer to the true value of $\alpha$.
+
+## Influence of correctly specifying intial parameters value on posterior distributions of parameters
+
+To understand which parameters are the ones that we need "to get right" in order to estimate the others correctly, I will compare the posterior distributions when we fit the model on all parameters or when considering some of them fixed to the values used when generating the data, i.e., the true parameter values.
+
+Specifically, I first generated a synthetic catalogue without known events using the true parameters, and then, on this catalogue, I set all the initial parameter values to the true parameter values and ran the INLA algorithm to obtain the posterior distributions of all parameters when they are all correctly specified. Next, I correctly specified 0, 1, 2, 3, and 4 of the initial parameter values, where the incorrect values were set to three times the true values, and ran the INLA algorithm for each case to obtain the posterior distributions under different correctly specifying scenarios. In total, I fitted 32 ETAS models.
+
+Due to the large number of models involved, to study the impact of correctly specifying the initial parameter values on the posterior distributions more clearly, I will present the posterior distributions in 4 separate figures, corresponding to the cases where 1, 2, 3, and 4 of the parameters are correctly specified, respectively.
+
+```{r}
+# generate the catalogue - it returns a list of data.frames
+set.seed(1)
+synth.cat.list2 <- generate_temporal_ETAS_synthetic(
+  theta = true.param,
+  beta.p = beta.p,
+  M0 = M0,
+  T1 = T1,
+  T2 = T2,
+  Ht = NULL
+)
+```
+
+```{r}
+# transform each catalogue in a data.frame
+synth.cat.df2 <- synth.cat.list2 |>
+  list_rbind() |>
+  arrange(ts) |>
+  mutate(idx.p = row_number())
+```
+
+```{r}
+# set up list of initial values
+th.init2 <- list(
+  th.mu = inv.link.f$mu(true.param$mu),
+  th.K = inv.link.f$K(true.param$K),
+  th.alpha = inv.link.f$alpha(true.param$alpha),
+  th.c = inv.link.f$c_(true.param$c),
+  th.p = inv.link.f$p(true.param$p)
+)
+```
+
+```{r}
+bru.opt.list2 <- list(
+  bru_verbose = 0, # type of visual output
+  bru_max_iter = 100, # maximum number of iterations
+  bru_initial = th.init2 # parameters initial values
+) 
+```
+
+```{r eval=FALSE}
+# fit models for each catalogue
+set.seed(1)
+synth.fit.2 <- Temporal.ETAS(total.data = synth.cat.df2,
+                             M0 = M0,
+                             T1 = T1,
+                             T2 = T2,
+                             link.functions = link.f,
+                             coef.t. = 1,
+                             delta.t. = 0.1,
+                             N.max. = 5,
+                             bru.opt = bru.opt.list2)
+write_rds(synth.fit.2,'rds/synth.fit.2.rds')
+```
+
+```{r}
+synth.fit.2 <- read_rds('rds/synth.fit.2.rds')
+```
+
+```{r}
+# create input list to explore model outputs
+input_list2 <- list(model.fit = synth.fit.2,
+                    link.functions = link.f)
+```
+
+```{r}
+# retrieve marginal posterior distributions
+post.list2 <- get_posterior_param(input_list2)
+```
+
+```{r}
+fix_all_post <- post.list2$post.df |> mutate(fixed_params = 'all')
+```
+
+```{r}
+fix_combinations <- expand_grid(v1 = names(true.param),
+                                v2 = names(true.param),
+                                v3 = names(true.param),
+                                v4 = names(true.param),
+                                v5 = names(true.param))
+
+fix_combinations <- map(.x = 1:nrow(fix_combinations),
+                        .f = ~sort(unique(as.character(fix_combinations[.x,]))))
+
+fix_combinations = unique(fix_combinations)
+
+length_params <- sapply(X = fix_combinations, FUN = length)
+fix_combinations <- fix_combinations[length_params!=length(true.param)]
+```
+
+```{r}
+length_params <- sapply(X = fix_combinations, FUN = length)
+fix_combinations1 <- fix_combinations[length_params==1]
+fix_combinations2 <- fix_combinations[length_params==2]
+fix_combinations3 <- fix_combinations[length_params==3]
+fix_combinations4 <- fix_combinations[length_params==4]
+
+fix_combinations1 <- c('none',fix_combinations1)
+
+wrong_mu <- true.param$mu*3
+wrong_K <- true.param$K*3
+wrong_alpha <- true.param$alpha*3
+wrong_c <- true.param$c*3
+wrong_p <- true.param$p*3
+
+true.param.df <- tibble(param = names(true.param),
+                        value = unlist(true.param))
+```
+
+```{r eval=FALSE}
+set.seed(1)
+plan(multisession, workers = num.cores)
+fix.post.list1 <- future_map(.x = fix_combinations1,
+                             .f = function(.x){
+                               
+                               temp_raw_mu <- wrong_mu
+                               temp_raw_K <- wrong_K
+                               temp_raw_alpha <- wrong_alpha
+                               temp_raw_c <- wrong_c
+                               temp_raw_p <- wrong_p
+                               
+                               if('mu' %in% .x){
+                                 temp_raw_mu <- true.param$mu
+                               }
+                               
+                               if('K' %in% .x){
+                                 temp_raw_K <- true.param$K
+                               }
+                               
+                               if('alpha' %in% .x){
+                                 temp_raw_alpha <- true.param$alpha
+                               }
+                               
+                               if('c' %in% .x){
+                                 temp_raw_c <- true.param$c
+                               }
+                               
+                               if('p' %in% .x){
+                                 temp_raw_p <- true.param$p
+                               }
+                               
+                               # set up list of initial values
+                               temp.th.init <- list(
+                                 th.mu = inv.link.f$mu(temp_raw_mu),
+                                 th.K = inv.link.f$K(temp_raw_K),
+                                 th.alpha = inv.link.f$alpha(temp_raw_alpha),
+                                 th.c = inv.link.f$c_(temp_raw_c),
+                                 th.p = inv.link.f$p(temp_raw_p)
+                               )
+                               
+                               temp.bru.opt.list <- list(
+                                 bru_verbose = 0, # type of visual output
+                                 bru_max_iter = 100, # maximum number of iterations
+                                 bru_initial = temp.th.init # parameters initial values
+                               ) 
+                               
+                               # fit models for each catalogue
+                               set.seed(1)
+                               temp.synth.fit <- Temporal.ETAS(total.data = synth.cat.df2,
+                                                               M0 = M0,
+                                                               T1 = T1,
+                                                               T2 = T2,
+                                                               link.functions = link.f,
+                                                               coef.t. = 1,
+                                                               delta.t. = 0.1,
+                                                               N.max. = 5,
+                                                               bru.opt = temp.bru.opt.list)
+                               
+                               # create input list to explore model outputs
+                               temp_input_list <- list(model.fit = temp.synth.fit,
+                                                       link.functions = link.f)
+                               
+                               # retrieve marginal posterior distributions
+                               temp.post.list <- get_posterior_param(temp_input_list)
+                               
+                               temp.post.df <- temp.post.list$post.df |> 
+                                 mutate(fixed_params = str_c(.x,collapse = ' + '))
+                               
+                               return(temp.post.df)
+                               
+                             })
+write_rds(fix.post.list1,'rds/fix.post.list1.rds')
+```
+
+```{r}
+fix.post.list1 = read_rds('rds/fix.post.list1.rds')
+```
+
+```{r}
+fix_1_post <- bind_rows(fix.post.list1)
+```
+
+```{r fig.cap='Posterior distributions of parameters when setting one of them fixed to the values used when generating the data'}
+ggplot() +
+  geom_line(data = fix_all_post,
+            mapping = aes(x = x, y = y, color = fixed_params),
+            linetype = 1,
+            linewidth = 2,
+            alpha = 0.5) +
+  geom_line(data = fix_1_post,
+            mapping = aes(x = x, y = y, color = fixed_params),
+            linetype = 2) +
+  geom_vline(data = true.param.df,
+             mapping = aes(xintercept = value),
+             linetype = 2) +
+  scale_color_brewer(palette = 'Set1') +
+  facet_wrap(~param,scales = 'free') +
+  labs(x = 'Parameter value',
+       y = 'PDF',
+       color = 'Fixed parameters',
+       linetype = 'Fixed parameters') +
+  theme(legend.position = 'bottom') +
+  theme_bw()
+```
+
+Figure 2 shows the posterior distributions when one parameter is correctly specified. The red thick line corresponds to the posterior distribution when all parameters are correctly specified, the yellow dashed line corresponds to the posterior distribution when all parameters are incorrectly specified, and the other colored dashed lines correspond to the posterior distributions when a single parameter is correctly specified. It can be seen that when all parameters are incorrectly specified and when $c$, $\alpha$, or $K$ is correctly specified, the posterior distributions of the different parameters are very close to each other. However, the posterior distributions of $c$ and $p$ are quite different from the case when all parameters are correctly specified. In contrast, when $p$ is correctly specified, the posterior distributions of $\alpha$ and $K$ are relatively close to the case when all parameters are correctly specified, but the posterior distributions of $c$, $\mu$, and $p$ are not as good. Overall, when $\mu$ is correctly specified, the posterior distributions of all parameters are closer to the case when all parameters are correctly specified, although the posterior distributions of $c$ and $p$ are still not perfect. Table 2 provides specific details on the standard deviation of the posterior distribution when the initial values of one parameter are correctly set, as well as the absolute percentage deviation between the mode of the posterior distribution and the true parameter values.
+
+\newpage
+
+```{r eval=FALSE}
+set.seed(1)
+plan(multisession, workers = num.cores)
+fix.post.list2 <- future_map(.x = fix_combinations2,
+                             .f = function(.x){
+                               
+                               temp_raw_mu <- wrong_mu
+                               temp_raw_K <- wrong_K
+                               temp_raw_alpha <- wrong_alpha
+                               temp_raw_c <- wrong_c
+                               temp_raw_p <- wrong_p
+                               
+                               if('mu' %in% .x){
+                                 temp_raw_mu <- true.param$mu
+                               }
+                               
+                               if('K' %in% .x){
+                                 temp_raw_K <- true.param$K
+                               }
+                               
+                               if('alpha' %in% .x){
+                                 temp_raw_alpha <- true.param$alpha
+                               }
+                               
+                               if('c' %in% .x){
+                                 temp_raw_c <- true.param$c
+                               }
+                               
+                               if('p' %in% .x){
+                                 temp_raw_p <- true.param$p
+                               }
+                               
+                               # set up list of initial values
+                               temp.th.init <- list(
+                                 th.mu = inv.link.f$mu(temp_raw_mu),
+                                 th.K = inv.link.f$K(temp_raw_K),
+                                 th.alpha = inv.link.f$alpha(temp_raw_alpha),
+                                 th.c = inv.link.f$c_(temp_raw_c),
+                                 th.p = inv.link.f$p(temp_raw_p)
+                               )
+                               
+                               temp.bru.opt.list <- list(
+                                 bru_verbose = 0, # type of visual output
+                                 bru_max_iter = 100, # maximum number of iterations
+                                 bru_initial = temp.th.init # parameters initial values
+                               ) 
+                               
+                               # fit models for each catalogue
+                               set.seed(1)
+                               temp.synth.fit <- Temporal.ETAS(total.data = synth.cat.df2,
+                                                               M0 = M0,
+                                                               T1 = T1,
+                                                               T2 = T2,
+                                                               link.functions = link.f,
+                                                               coef.t. = 1,
+                                                               delta.t. = 0.1,
+                                                               N.max. = 5,
+                                                               bru.opt = temp.bru.opt.list)
+                               
+                               # create input list to explore model outputs
+                               temp_input_list <- list(model.fit = temp.synth.fit,
+                                                       link.functions = link.f)
+                               
+                               # retrieve marginal posterior distributions
+                               temp.post.list <- get_posterior_param(temp_input_list)
+                               
+                               temp.post.df <- temp.post.list$post.df |> 
+                                 mutate(fixed_params = str_c(.x,collapse = ' + '))
+                               
+                               return(temp.post.df)
+                               
+                             })
+write_rds(fix.post.list2,'rds/fix.post.list2.rds')
+```
+
+```{r}
+fix.post.list2 <- read_rds('rds/fix.post.list2.rds')
+```
+
+```{r}
+fix_2_post <- bind_rows(fix.post.list2)
+```
+
+```{r fig.height=5,fig.cap='Posterior distributions of parameters when setting two of them fixed to the values used when generating the data'}
+ggplot() +
+  geom_line(data = fix_all_post,
+            mapping = aes(x = x, y = y, color = fixed_params),
+            linetype = 1,
+            linewidth = 2,
+            alpha = 0.5) +
+  geom_line(data = fix_2_post,
+            mapping = aes(x = x, y = y, color = fixed_params),
+            linetype = 2) +
+  geom_vline(data = true.param.df,
+             mapping = aes(xintercept = value),
+             linetype = 2) +
+  scale_color_viridis_d() +
+  facet_wrap(~param,scales = 'free') +
+  labs(x = 'Parameter value',
+       y = 'PDF',
+       color = 'Fixed parameters',
+       linetype = 'Fixed parameters') +
+  theme(legend.position = 'bottom') +
+  theme_bw()
+```
+
+```{r fig.height=3.5,fig.cap='Posterior distributions of parameters when setting mu and p fixed to the values used when generating the data'}
+ggplot() +
+  geom_line(data = fix_all_post,
+            mapping = aes(x = x, y = y, color = fixed_params),
+            linetype = 1,
+            linewidth = 2,
+            alpha = 0.5) +
+  geom_line(data = fix_2_post |> filter(fixed_params=='mu + p'),
+            mapping = aes(x = x, y = y, color = fixed_params),
+            linetype = 2) +
+  geom_vline(data = true.param.df,
+             mapping = aes(xintercept = value),
+             linetype = 2) +
+  scale_color_brewer(palette = 'Set1') +
+  facet_wrap(~param,scales = 'free') +
+  labs(x = 'Parameter value',
+       y = 'PDF',
+       color = 'Fixed parameters',
+       linetype = 'Fixed parameters') +
+  theme(legend.position = 'bottom') +
+  theme_bw()
+```
+
+Figure 3 shows the posterior distributions when two parameters are correctly specified. The purple thick line corresponds to the posterior distribution when all parameters are correctly specified, and the other colored dashed lines correspond to the posterior distributions when different pairs of parameters are correctly specified. It can be seen that among these 10 cases, there is one case where the posterior distributions of all parameters almost perfectly match the posterior distributions when all parameters are correctly specified. After investigation, it was found that the two parameters correctly specified in this case are $\mu$ and $p$. The posterior distributions when $\mu$ and $p$ are correctly specified are shown in Figure 4, and they are nearly identical to the posterior distributions when all parameters are correctly specified. Table 3 provides specific details on the standard deviation of the posterior distribution when the initial values of two parameters are correctly set, as well as the absolute percentage deviation between the mode of the posterior distribution and the true parameter values.
+
+\newpage
+
+```{r eval=FALSE}
+set.seed(1)
+plan(multisession, workers = num.cores)
+fix.post.list3 <- future_map(.x = fix_combinations3,
+                             .f = function(.x){
+                               
+                               temp_raw_mu <- wrong_mu
+                               temp_raw_K <- wrong_K
+                               temp_raw_alpha <- wrong_alpha
+                               temp_raw_c <- wrong_c
+                               temp_raw_p <- wrong_p
+                               
+                               if('mu' %in% .x){
+                                 temp_raw_mu <- true.param$mu
+                               }
+                               
+                               if('K' %in% .x){
+                                 temp_raw_K <- true.param$K
+                               }
+                               
+                               if('alpha' %in% .x){
+                                 temp_raw_alpha <- true.param$alpha
+                               }
+                               
+                               if('c' %in% .x){
+                                 temp_raw_c <- true.param$c
+                               }
+                               
+                               if('p' %in% .x){
+                                 temp_raw_p <- true.param$p
+                               }
+                               
+                               # set up list of initial values
+                               temp.th.init <- list(
+                                 th.mu = inv.link.f$mu(temp_raw_mu),
+                                 th.K = inv.link.f$K(temp_raw_K),
+                                 th.alpha = inv.link.f$alpha(temp_raw_alpha),
+                                 th.c = inv.link.f$c_(temp_raw_c),
+                                 th.p = inv.link.f$p(temp_raw_p)
+                               )
+                               
+                               temp.bru.opt.list <- list(
+                                 bru_verbose = 0, # type of visual output
+                                 bru_max_iter = 100, # maximum number of iterations
+                                 bru_initial = temp.th.init # parameters initial values
+                               ) 
+                               
+                               # fit models for each catalogue
+                               set.seed(1)
+                               temp.synth.fit <- Temporal.ETAS(total.data = synth.cat.df2,
+                                                               M0 = M0,
+                                                               T1 = T1,
+                                                               T2 = T2,
+                                                               link.functions = link.f,
+                                                               coef.t. = 1,
+                                                               delta.t. = 0.1,
+                                                               N.max. = 5,
+                                                               bru.opt = temp.bru.opt.list)
+                               
+                               # create input list to explore model outputs
+                               temp_input_list <- list(model.fit = temp.synth.fit,
+                                                       link.functions = link.f)
+                               
+                               # retrieve marginal posterior distributions
+                               temp.post.list <- get_posterior_param(temp_input_list)
+                               
+                               temp.post.df <- temp.post.list$post.df |> 
+                                 mutate(fixed_params = str_c(.x,collapse = ' + '))
+                               
+                               return(temp.post.df)
+                               
+                             })
+write_rds(fix.post.list3,'rds/fix.post.list3.rds')
+```
+
+```{r}
+fix.post.list3 <- read_rds('rds/fix.post.list3.rds')
+```
+
+```{r}
+fix_3_post <- bind_rows(fix.post.list3)
+```
+
+Figure 5 shows the posterior distributions when three parameters are correctly specified. The purple thick line corresponds to the posterior distribution when all parameters are correctly specified, and the other colored dashed lines correspond to the posterior distributions when different triplets of parameters are correctly specified. Similar to the pattern observed in Figure 2, among these 10 cases where three parameters are correctly specified, there are a few cases where the posterior distributions of all parameters almost perfectly match the posterior distributions when all parameters are correctly specified. After investigation, it was found that the three parameters that satisfy this condition can be:
+
+- $\alpha$, $c$, $p$
+
+- $\alpha$, $\mu$, $p$
+
+- $c$, $\mu$, $p$
+
+The posterior distributions when these triplets of parameters are correctly specified are shown in Figure 6, and they are nearly identical to the posterior distributions when all parameters are correctly specified. Table 4 provides specific details on the standard deviation of the posterior distribution when the initial values of three parameters are correctly set, as well as the absolute percentage deviation between the mode of the posterior distribution and the true parameter values.
+
+```{r fig.cap='Posterior distributions of parameters when setting three of them fixed to the values used when generating the data'}
+ggplot() +
+  geom_line(data = fix_all_post,
+            mapping = aes(x = x, y = y, color = fixed_params),
+            linetype = 1,
+            linewidth = 2,
+            alpha = 0.5) +
+  geom_line(data = fix_3_post,
+            mapping = aes(x = x, y = y, color = fixed_params),
+            linetype = 2) +
+  geom_vline(data = true.param.df,
+             mapping = aes(xintercept = value),
+             linetype = 2) +
+  scale_color_viridis_d() +
+  facet_wrap(~param,scales = 'free') +
+  labs(x = 'Parameter value',
+       y = 'PDF',
+       color = 'Fixed parameters',
+       linetype = 'Fixed parameters') +
+  theme(legend.position = 'bottom') +
+  theme_bw()
+```
+
+\newpage
+
+```{r fig.cap='Posterior distributions of parameters when setting three of them (alpha, c, p or alpha, mu, p or c, mu, p) fixed to the values used when generating the data'}
+ggplot() +
+  geom_line(data = fix_all_post,
+            mapping = aes(x = x, y = y, color = fixed_params),
+            linetype = 1,
+            linewidth = 2,
+            alpha = 0.5) +
+  geom_line(data = fix_3_post |> 
+              filter(fixed_params %in% c('alpha + c + p',
+                                         'alpha + mu + p',
+                                         'c + mu + p')),
+            mapping = aes(x = x, y = y, color = fixed_params),
+            linetype = 2) +
+  geom_vline(data = true.param.df,
+             mapping = aes(xintercept = value),
+             linetype = 2) +
+  scale_color_brewer(palette = 'Set1') +
+  facet_wrap(~param,scales = 'free') +
+  labs(x = 'Parameter value',
+       y = 'PDF',
+       color = 'Fixed parameters',
+       linetype = 'Fixed parameters') +
+  theme(legend.position = 'bottom') +
+  theme_bw()
+```
+
+```{r eval=FALSE}
+set.seed(1)
+plan(multisession, workers = num.cores)
+fix.post.list4 <- future_map(.x = fix_combinations4,
+                             .f = function(.x){
+                               
+                               temp_raw_mu <- wrong_mu
+                               temp_raw_K <- wrong_K
+                               temp_raw_alpha <- wrong_alpha
+                               temp_raw_c <- wrong_c
+                               temp_raw_p <- wrong_p
+                               
+                               if('mu' %in% .x){
+                                 temp_raw_mu <- true.param$mu
+                               }
+                               
+                               if('K' %in% .x){
+                                 temp_raw_K <- true.param$K
+                               }
+                               
+                               if('alpha' %in% .x){
+                                 temp_raw_alpha <- true.param$alpha
+                               }
+                               
+                               if('c' %in% .x){
+                                 temp_raw_c <- true.param$c
+                               }
+                               
+                               if('p' %in% .x){
+                                 temp_raw_p <- true.param$p
+                               }
+                               
+                               # set up list of initial values
+                               temp.th.init <- list(
+                                 th.mu = inv.link.f$mu(temp_raw_mu),
+                                 th.K = inv.link.f$K(temp_raw_K),
+                                 th.alpha = inv.link.f$alpha(temp_raw_alpha),
+                                 th.c = inv.link.f$c_(temp_raw_c),
+                                 th.p = inv.link.f$p(temp_raw_p)
+                               )
+                               
+                               temp.bru.opt.list <- list(
+                                 bru_verbose = 0, # type of visual output
+                                 bru_max_iter = 100, # maximum number of iterations
+                                 bru_initial = temp.th.init # parameters initial values
+                               ) 
+                               
+                               # fit models for each catalogue
+                               set.seed(1)
+                               temp.synth.fit <- Temporal.ETAS(total.data = synth.cat.df2,
+                                                               M0 = M0,
+                                                               T1 = T1,
+                                                               T2 = T2,
+                                                               link.functions = link.f,
+                                                               coef.t. = 1,
+                                                               delta.t. = 0.1,
+                                                               N.max. = 5,
+                                                               bru.opt = temp.bru.opt.list)
+                               
+                               # create input list to explore model outputs
+                               temp_input_list <- list(model.fit = temp.synth.fit,
+                                                       link.functions = link.f)
+                               
+                               # retrieve marginal posterior distributions
+                               temp.post.list <- get_posterior_param(temp_input_list)
+                               
+                               temp.post.df <- temp.post.list$post.df |> 
+                                 mutate(fixed_params = str_c(.x,collapse = ' + '))
+                               
+                               return(temp.post.df)
+                               
+                             })
+write_rds(fix.post.list4,'rds/fix.post.list4.rds')
+```
+
+```{r}
+fix.post.list4 <- read_rds('rds/fix.post.list4.rds')
+```
+
+```{r}
+fix_4_post <- bind_rows(fix.post.list4)
+```
+
+Figure 7 shows the posterior distributions when four parameters are correctly specified. The purple thick line corresponds to the posterior distribution when all parameters are correctly specified, and the other colored dashed lines correspond to the posterior distributions when different sets of four parameters are correctly specified. It can be seen that when the initial values of $\alpha$, $K$, $\mu$, and $p$ are correctly specified, the posterior distributions of all parameters are almost identical to the posterior distributions when all parameters are correctly specified. Table 4 provides specific details on the standard deviation of the posterior distribution when the initial values of four parameters are correctly set, as well as the absolute percentage deviation between the mode of the posterior distribution and the true parameter values.
+
+```{r fig.cap='Posterior distributions of parameters when setting four of them fixed to the values used when generating the data'}
+ggplot() +
+  geom_line(data = fix_all_post,
+            mapping = aes(x = x, y = y, color = fixed_params),
+            linetype = 1,
+            linewidth = 2,
+            alpha = 0.5) +
+  geom_line(data = fix_4_post,
+            mapping = aes(x = x, y = y, color = fixed_params),
+            linetype = 2) +
+  geom_vline(data = true.param.df,
+             mapping = aes(xintercept = value),
+             linetype = 2) +
+  scale_color_viridis_d() +
+  facet_wrap(~param,scales = 'free') +
+  labs(x = 'Parameter value',
+       y = 'PDF',
+       color = 'Fixed parameters',
+       linetype = 'Fixed parameters') +
+  theme(legend.position = 'bottom') +
+  theme_bw()
+```
+
+\newpage
+
+## Relationship between sequence characteristics and posterior distributions of parameters
+
+Here, we use the 27 synthetic catalogues generated in the first research question again to investigate the relationship between the parameters' posterior distributions of the model fitted on these synthetic catalogues and the characteristics of the synthetic catalogues. Specifically, the characteristics considered include the number of events in the sequence and the number of large events, where we define large events as those with magnitudes greater than or equal to 5.
+
+```{r}
+post.list3 <- map(.x = seq_along(post.list1),
+                  .f = function(.x){
+                    post.list1[[.x]]$post.df |>
+                      mutate(group = .x,
+                             n_event = nrow(synth.cat.df1[[.x]]),
+                             n_large_event = sum(synth.cat.df1[[.x]]$magnitudes>=5))})
+```
+
+Figure 8 and Figure 9 reveal the relationships between the number of events/large events and the posterior distributions of the model parameters fitted on the corresponding synthetic catalogues, respectively. The black dashed lines represent the true parameter values, and each curve corresponds to one model. It is clear that as the number of events/large events increases, the mode of the posterior distribution of the parameters becomes closer to the true parameter values, and the standard deviation of the posterior distribution also decreases.
+
+```{r fig.cap='Relationship between posterior distributions of parameters and number of events'}
+ggplot() +
+  geom_line(data = list_rbind(post.list3[-1]),
+            mapping = aes(x = x,
+                          y = y,
+                          group = group,
+                          color = n_event),
+            alpha = 0.8) +
+  geom_vline(data = true.param.df,
+             mapping = aes(xintercept = value),
+             linetype = 2) +
+  scale_color_viridis_c() +
+  facet_wrap(~param,scales = 'free') +
+  labs(x = 'Parameter value',
+       y = 'PDF',
+       color = 'Number of events') +
+  theme(legend.position = 'bottom',
+        legend.key.width = unit(2,'cm')) +
+  theme_bw()
+```
+
+```{r fig.cap='Relationship between posterior distributions of parameters and number of large events'}
+ggplot() +
+  geom_line(data = list_rbind(post.list3[-1]),
+            mapping = aes(x = x,
+                          y = y,
+                          group = group,
+                          color = n_large_event),
+            alpha = 0.8) +
+  geom_vline(data = true.param.df,
+             mapping = aes(xintercept = value),
+             linetype = 2) +
+  scale_color_viridis_c() +
+  facet_wrap(~param,scales = 'free') +
+  labs(x = 'Parameter value',
+       y = 'PDF',
+       color = 'Number of large events') +
+  theme(legend.position = 'bottom',
+        legend.key.width = unit(2,'cm')) +
+  theme_bw()
+```
+
+\newpage
+
+## Forecast accuracy
+
+Here, we have regenerated a synthetic catalogue, and the difference from the previous synthetic catalogues is that the historical known event in generating this synthetic catalogue is an earthquake of magnitude 6.5 that occurred at time 91.25. The generated earthquake sequence is shown in Figure 10, where the red dashed line indicates the time of the occurrence of the known event, and a large number of aftershocks occurred after that.
+
+```{r}
+# generate the catalogue - it returns a list of data.frames
+set.seed(1)
+synth.cat.list4 <- generate_temporal_ETAS_synthetic(
+  theta = true.param,
+  beta.p = beta.p,
+  M0 = M0,
+  T1 = T1,
+  T2 = T2,
+  Ht = data.frame(ts = quantile(x = c(T1,T2), probs = 0.25),
+                  magnitudes = 6.5)
+)
+```
+
+```{r}
+# transform each catalogue in a data.frame
+synth.cat.df4 <- synth.cat.list4 |>
+  list_rbind() |>
+  arrange(ts) |>
+  mutate(idx.p = row_number())
+```
+
+```{r}
+# find time of the event with the greatest magnitude
+t.max.mag <- synth.cat.df4 |> slice_max(order_by = magnitudes,n = 1) |> pull(ts)
+```
+
+```{r fig.cap='Synthetic catalogue'}
+ggplot() +
+  geom_point(data = synth.cat.df4,
+             mapping = aes(x = ts, y = magnitudes),
+             alpha = 0.5) +
+  geom_vline(xintercept = t.max.mag,
+             linetype = 2,
+             color = 'red') +
+  labs(x = 'Time difference between the starting date and the occurrence time of the events (days)',
+       y = 'Magnitudes') +
+  theme_bw()
+```
+
+```{r}
+# set up list of initial values
+th.init4 <- list(
+  th.mu = inv.link.f$mu(0.5),
+  th.K = inv.link.f$K(0.1),
+  th.alpha = inv.link.f$alpha(1),
+  th.c = inv.link.f$c_(0.1),
+  th.p = inv.link.f$p(1.1)
+)
+```
+
+```{r}
+bru.opt.list4 <- list(
+  bru_verbose = 0, # type of visual output
+  bru_max_iter = 100, # maximum number of iterations
+  bru_initial = th.init4 # parameters initial values
+) 
+```
+
+```{r eval=FALSE}
+# fit models for each catalogue
+set.seed(1)
+synth.fit.4 <- Temporal.ETAS(total.data = synth.cat.df4,
+                             M0 = M0,
+                             T1 = T1,
+                             T2 = T2,
+                             link.functions = link.f,
+                             coef.t. = 1,
+                             delta.t. = 0.1,
+                             N.max. = 5,
+                             bru.opt = bru.opt.list4)
+write_rds(synth.fit.4,'rds/synth.fit.4.rds')
+```
+
+```{r}
+synth.fit.4 <- read_rds('rds/synth.fit.4.rds')
+```
+
+```{r}
+# create input list to explore model outputs
+input_list4 <- list(model.fit = synth.fit.4,
+                    link.functions = link.f)
+```
+
+Based on this synthetic catalogue, we fitt the ETAS model using the parameter settings mentioned earlier, and then generate 100 samples from the joint posterior of the ETAS parameters. In addition, it should be noted that the parameter of the magnitude distribution $\beta$ used to generate the synthetic catalogue needs to be updated. The magnitude distribution is an exponential distribution:
+
+$$m-M_0\sim Exp(\beta)$$
+
+The parameter $\beta$ is usually estimated independently from the ETAS parameters.  use the maximum likelihood estimator for $\beta$ which is given by
+
+$$\hat{\beta}=\frac{1}{m-M_0}$$
+
+where $m$ is the mean of the observed magnitudes values.
+
+```{r}
+new.beta.p <- 1 / (mean(synth.cat.df4$magnitudes) - M0)
+```
+
+```{r}
+set.seed(1)
+post.samp <- post_sampling(input.list = input_list4,
+                           n.samp = 100,
+                           ncore = num.cores)
+n.post.samp <- nrow(post.samp)
+```
+
+When forecasting future earthquake events, we set the starting time of the forecasting period to 1 minute after the occurrence of the largest magnitude earthquake, i.e., 1 minute after 91.25, and the end time of the forecasting period is the starting time plus the forecast length. Here, we set the forecast length to 1 to 50, so we will obtain 50 forecasting periods in the end.
+
+For each forecasting period, we use the known events used to generate the synthetic catalogue, the updated parameter of the magnitude distribution $\beta$, and 100 samples from the joint posterior of the ETAS parameters. For each posterior sample, we generate a synthetic catalogue composing the forecast. Therefore, for a single forecasting period, we can generate 100 earthquake sequences, and the number of events in each sequence is the number of forecast events per catalogue in that specific forecasting period. Based on these 100 numbers of forecast events, we calculate the median, precision, 2.5%, and 97.5% quantiles. In addition, we need to use the initially generated synthetic catalogue to calculate the number of observed events in the forecasting period.
+
+```{r}
+# express 1 minute in days
+min.in.days <- 1 / (24 * 60)
+
+# set starting time of the forecasting period
+T1.fore <- t.max.mag + min.in.days
+
+# set known data
+Ht.fore <- synth.cat.df4 |> filter(ts < T1.fore)
+```
+
+```{r}
+forecast_ETAS <- function(x){
+  # set starting time of the forecasting period
+  new.T1.fore <- T1.fore
+  # set end time of the forecasting period
+  new.T2.fore <- T1.fore + x
+  
+  set.seed(1)
+  # produce forecast
+  forecast <- Temporal.ETAS.forecast(
+    post.samp = post.samp, # ETAS parameters posterior samples
+    n.cat = n.post.samp, # number of synthetic catalogues
+    beta.p = new.beta.p, # magnitude distribution parameter
+    M0 = M0, # cutoff magnitude
+    T1 = new.T1.fore, # forecast starting time
+    T2 = new.T2.fore, # forecast end time
+    Ht = Ht.fore # known events
+  )
+  
+  # find number of events per catalogue
+  N.fore <- map_dbl(.x = 1:n.post.samp,
+                    .f = ~sum(forecast$fore.df$cat.idx==.x))
+  
+  # find number of observed events in the forecasting period
+  N.obs <- synth.cat.df4 |>
+    filter(between(ts, new.T1.fore, new.T2.fore)) |>
+    nrow()
+  
+  # median, quantiles of forecast number of events and true number of events
+  tibble(period = x,
+         true = N.obs,
+         median = median(N.fore),
+         lower = quantile(N.fore,0.025),
+         upper = quantile(N.fore,0.975),
+         precision = 1/sd(N.fore))
+}
+```
+
+```{r eval=FALSE}
+set.seed(1)
+plan(multisession, workers = num.cores)
+forecast_result <- future_map(.x = 1:50,
+                              .f = forecast_ETAS,
+                              .progress = FALSE)
+forecast_result <- list_rbind(forecast_result)
+write_rds(forecast_result,'rds/forecast_result.rds')
+```
+
+```{r}
+forecast_result <- read_rds('rds/forecast_result.rds')
+```
+
+Figure 11 shows the number of events in the 50 forecasting periods starting 1 minute after the occurrence of the largest magnitude earthquake. The black dots represent the number of observed events in the forecasting periods, the red line represents the median of the number of forecast events in the forecasting periods, and the orange area represents the 95% confidence interval of the number of forecast events in the forecasting periods. Note that the y-axis is log-transformed, which is done to make the visualization clearer and more intuitive. In fact, we are forecasting the cumulative count of events after 1 minute of the occurrence of the largest magnitude earthquake. It can be seen that the growth of the number of aftershocks is the fastest within the first 5 days after the largest magnitude earthquake, and the growth of the aftershocks gradually slows down after 5 days. The median of the number of forecast events is close to the number of observed events, and the 95% confidence interval also includes the number of observed events in the forecasting periods. In other words, the forecast accuracy of the ETAS model is good.
+
+```{r fig.cap='Forecast and true cumulative count of events'}
+ggplot(data = forecast_result,
+       mapping = aes(x = period)) +
+  geom_point(mapping = aes(y = true)) +
+  geom_ribbon(mapping = aes(ymin = lower, ymax = upper),
+              alpha = 0.3,
+              fill = 'orange') +
+  geom_line(mapping = aes(y = median),color = 'red') +
+  scale_y_log10(labels = comma) +
+  labs(x = 'Period',
+       y = 'Cumulative count') +
+  theme_bw()
+```
+
+To evaluate the forecast accuracy of the ETAS model numerically, the following statistical metrics can be considered:
+
+\newpage
+
+$$RMSE=\sqrt{\frac{1}{n}\sum_{t=1}^{n}{(\hat{y}_t-y_t)^2}}$$
+
+$$MAE=\frac{1}{n}\sum_{t=1}^{n}{|\hat{y}_t-y_t|}$$
+
+$$MAPE=100\times\frac{1}{n}\sum_{t=1}^{n}{\frac{|\hat{y}_t-y_t|}{y_t}}$$
+
+$$R^2=\left[\frac{\sum_{t=1}^{n}{(y_t-\overline{y_t})(\hat{y}_t-\overline{\hat{y}_t})}}{\sqrt{\sum_{t=1}^{n}{(\hat{y_t}-\overline{\hat{y_t}})^2}}\sqrt{\sum_{t=1}^{n}{(y_t-\overline{y_t})^2}}}\right]^2$$
+
+Where $y_t$ is the number of observed events, $\hat{y}_t$ is the number of forecast events, $n$ is the total number of forecasting periods. The more the $RMSE$, $MAE$, $MAPE$, and $Theil's\ U$ are closer to 0, the higher forecast accuracy, and the higher the $R^2$, the stronger the correlation between the number of forecast events and the number of observed events.
+
+Table 1 presents the values of statistical metrics related to the forecast accuracy of the ETAS model in these 50 forecasting periods. On average, the mean error in predicting the cumulative count of events is between 30 and 40, which can be considered relatively small given the scale of the y-axis in Figure 10. On average, the deviation between the forecast and observation is 3.65%, and the correlation between the two is 0.96.
+
+```{r}
+forecast_result |> 
+  summarise(RMSE = sqrt(mean((true-median)^2)),
+            MAE = mean(abs(true-median)),
+            MAPE = 100*mean(abs(true-median)/true),
+            R2 = cor(true,median)^2) |> 
+  pivot_longer(cols = everything(),
+               names_to = 'Statistics',
+               values_to = 'Value') |> 
+  kbl(booktabs = TRUE, 
+      caption = "Statistics about forecast accuracy",
+      digits = 4) 
+```
+
+To evaluate the forecast precision of the ETAS model, for each forecasting period, I calculated the inverse of the standard deviation of the forecast from 100 synthetic catalogs, which represents the precision. Then, I plotted the relationship between the forecast precision and the forecasting period, as shown in Figure 12. It can be seen that as the forecasting period is extended, the forecast precision decreases, which is because the forecast is for the cumulative count of events, and therefore the forecast error accumulates as the forecasting period is lengthened.
+
+```{r fig.height=4,fig.cap='Forecast precision of ETAS model'}
+ggplot(data = forecast_result,
+       mapping = aes(x = period,y = precision)) +
+  geom_line() +
+  labs(x = 'Period',
+       y = 'Forecast precision') +
+  theme_bw()
+```
+
+\newpage
+
+## Empirical distribution of "time between events"
+
+To compare the empirical distribution of "time between events" in the synthetic catalog from estimated vs. known parameters, I directly used the synthetic catalog generated without historical known events and using the true parameter values in the second research question, as well as the corresponding posterior distribution of the ETAS model. First, I found the mode of the posterior distribution of all the parameters of the fitted ETAS model, which served as the estimated parameters, and updated the parameter of the magnitude distribution $\beta$ based on the synthetic catalog. Then, I regenerated the synthetic catalog using the estimated parameters and the estimated $\beta$. Finally, I calculated the "time between events" for the synthetic catalogs from both the estimated and known parameters.
+
+```{r}
+est.param <- post.list2$post.df |> 
+  group_by(param) |> 
+  slice_max(order_by = y, n = 1) |> 
+  select(param,x)
+
+est.param.list <- as.list(est.param$x)
+names(est.param.list) <- est.param$param
+beta.p5 <- 1 / (mean(synth.cat.df2$magnitudes) - M0)
+```
+
+```{r}
+# generate the catalogue - it returns a list of data.frames
+set.seed(1)
+synth.cat.list5 <- generate_temporal_ETAS_synthetic(
+  theta = est.param.list,
+  beta.p = beta.p5,
+  M0 = M0,
+  T1 = T1,
+  T2 = T2,
+  Ht = NULL
+)
+```
+
+```{r}
+# transform each catalogue in a data.frame
+synth.cat.df5 <- synth.cat.list5 |>
+  list_rbind() |>
+  arrange(ts) |>
+  mutate(idx.p = row_number())
+```
+
+```{r}
+ecdf_known <- ecdf(diff(synth.cat.df2$ts))
+ecdf_est <- ecdf(diff(synth.cat.df5$ts))
+```
+
+```{r}
+cdf_data <- tibble(diff_ts = seq(0,20,0.01),
+                   `Known parameters` = ecdf_known(diff_ts),
+                   `Estimated parameters` = ecdf_est(diff_ts))
+```
+
+Figures 13 and 14 show the empirical CDF and empirical PDF of the "time between events" in the synthetic catalog from estimated vs. known parameters, respectively. It can be seen that the empirical distributions of the "time between events" are very similar in the two cases, meaning that even the synthetic catalog generated using the estimated parameters has a "time between events" distribution that is close to the one calculated using the "true" data. Therefore, from this perspective, the ETAS model fitted to the data is highly reliable.
+
+```{r fig.height=4,fig.cap='Empirical CDF of "time between events" in synthetic catalogue from estimated vs known parameters'}
+cdf_data |> 
+  pivot_longer(cols = -diff_ts) |> 
+  ggplot(aes(x = diff_ts, y = value, color = name)) +
+  geom_line() +
+  scale_color_brewer(palette = 'Set1') +
+  labs(x = 'Time between events',
+       y = 'CDF',
+       color = NULL) +
+  theme_bw()
+```
+
+```{r fig.height=4,fig.cap='Empirical PDF of "time between events" in synthetic catalogue from estimated vs known parameters'}
+ggplot() +
+  stat_density(data = tibble(diff_ts = diff(synth.cat.df2$ts),
+                             group = 'Known parameters'),
+               mapping = aes(x = diff_ts, color = group),
+               geom = 'line') +
+  stat_density(data = tibble(diff_ts = diff(synth.cat.df5$ts),
+                             group = 'Estimated parameters'),
+               mapping = aes(x = diff_ts, color = group),
+               geom = 'line') +
+  scale_color_brewer(palette = 'Set1') +
+  labs(x = 'Time between events',
+       y = 'Density',
+       color = NULL) +
+  theme_bw()
+```
+
+\newpage
+
+To formally compare the existence of significant differences between the empirical distribution of "time between events" in two different scenarios, a two-sample Kolmogorov-Smirnov (KS) test is employed for testing. The two-sample KS test compares the empirical distribution functions from two groups.
+
+Suppose the "time between events" data from two groups:
+
+$$X_1,\cdots,X_n\sim F_{known}$$
+
+$$Y_1,\cdots,Y_m\sim F_{estimate}$$
+
+The two-sample KS test performs a test of the following hypothesis:
+
+$$H_0:F_{known}=F_{estimate}\ vs.\ H_1:F_{known}\ne F_{estimate}$$
+
+The two-sample KS test statistic is defined as the maximum distance between the two empirical distribution functions:
+
+$$KS_{n,m}=\underset{t}{\sup}|\hat{F}_{n,known}(t)-\hat{F}_{m,estimate}(t)|$$
+
+where $\hat{F}_{n,known}(t)=\frac{1}{n}\sum_{i=1}^{n}{I(X_i\le t)}$ and $\hat{F}_{m,estimate}(t)=\frac{1}{m}\sum_{j=1}^{m}{I(Y_j\le t)}$ denote the empirical distribution functions from the $X$ and $Y$ samples.
+
+```{r}
+ts_diff_known <- diff(synth.cat.df2$ts)
+ts_diff_est <- diff(synth.cat.df5$ts)
+ts_diff <- c(ts_diff_known,ts_diff_est)
+ts_diff_order <- sort(ts_diff)
+grp <- rep(c('known','est'), c(length(ts_diff_known), length(ts_diff_est)))
+
+ecdf_known <- ecdf(diff(synth.cat.df2$ts))
+ecdf_est <- ecdf(diff(synth.cat.df5$ts))
+
+obs_stat <- max(abs(ecdf_known(ts_diff_order) - ecdf_est(ts_diff_order)))
+```
+
+```{r}
+Nperm <- 10000
+perm_distn <- NULL
+set.seed(1)
+for (i in 1:Nperm) {
+  grp_perm <- sample(grp)
+  ecdf_known_perm <- ecdf(ts_diff[grp_perm=='known'])
+  ecdf_est_perm <- ecdf(ts_diff[grp_perm=='est'])
+  perm_distn[i] <- max(abs(ecdf_known_perm(ts_diff_order) - ecdf_est_perm(ts_diff_order)))
+}
+```
+
+```{r}
+p_value <- (sum(perm_distn >= obs_stat)+1)/(Nperm+1)
+```
+
+After conducting 10,000 iterations of the permutation test, the p-value of the KS test for the empirical distributions of "time between events" in synthetic data from estimated versus known parameters is greater than 0.05. This suggests that we do not have sufficient evidence to reject the null hypothesis, indicating that there is no statistically significant difference in "time between events" between synthetic data from estimated versus known parameters.
+
+
+# Conclusion
+
+The performance of the model fitted using the `ETAS.inlabru` package in forecasting future earthquake events is quite good. More different magnitude events and higher magnitude events often make the parameter estimation results of the model more reliable, and the correct setting of some initial parameter values can make the posterior distribution of the model parameters more reasonable. Specifically:
+
+- Catalogs containing more different high-magnitude events or higher-magnitude events can make the mode of the posterior distribution of $\alpha$ closer to the true $\alpha$ value and can also make the standard deviation of the posterior distribution of $\alpha$ smaller.
+
+- When constructing the ETAS model, if the initial values of the two parameters $\mu$ and $p$ are set correctly, when the algorithm converges, the posterior distributions of all the parameters of the model will perfectly match the posterior distributions of the parameters obtained when all the initial values are set with the correct parameter values. The same situation will also occur when the initial values of three parameters ($\alpha$, $c$, $p$; $\alpha$, $\mu$, $p$; $c$, $\mu$, $p$) or four parameters ($\alpha$, $K$, $\mu$, $p$) are set correctly.
+
+- The larger the number of events and the number of large events in the catalog, the closer the mode of the posterior distribution of the model parameters (not just $\alpha$) to the true parameter values, and the smaller the standard deviation, that is, the more reliable the parameter estimation of the model.
+
+- When forecasting the future cumulative count of events, the average deviation between the forecasts and true values is 3.65%, and the correlation between the two is 0.96. In addition, the forecast precision gradually decreases as the forecasting period is extended.
+
+- The empirical distribution of the "time between events" in synthetic catalogs from estimated and known parameters is almost identical, which means that the ETAS model fitted using the INLA method is highly reliable.
+
+```{=latex}
+%the entries have to be in the file literature.bib
+\bibliography{literature}
+```
+
+\newpage
+
+# Appendices
+**A Code**
+
+In order to make the report more clear, the codes for generating the results can be found in https://github.com/JIAOHAOYANG/S2333015-dissertation.
+
+
+**B Some tables with different number of parameters’ intial values were correctly set**
+
+
+```{r}
+fix_1_post |> 
+  group_by(fixed_params,param) |> 
+  summarise(Mean = weighted.mean(x = x, w = y),
+            Mode = x[which.max(y)],
+            SD = sqrt(weighted.mean(x = (x-Mean)^2, w = y))) |> 
+  ungroup() |> 
+  left_join(true.param.df, by = 'param') |> 
+  mutate(`Abs Diff` = 100*abs(Mode - value)/value) |> 
+  select(-Mean,-Mode,-value) |> 
+  rename(Parameter = param,
+         `Correct Set Inital Value` = fixed_params) |>
+  select(`Correct Set Inital Value`,Parameter,`Abs Diff`,SD) |> 
+  kbl(booktabs = TRUE, 
+      caption = "The absolute percentage deviation and standard deviation of posterior distributions of parameters when one parameters' intial values were correctly set",
+      digits = 3,
+      longtable = TRUE)
+```
+
+\newpage
+
+```{r}
+fix_2_post |> 
+  group_by(fixed_params,param) |> 
+  summarise(Mean = weighted.mean(x = x, w = y),
+            Mode = x[which.max(y)],
+            SD = sqrt(weighted.mean(x = (x-Mean)^2, w = y))) |> 
+  ungroup() |> 
+  left_join(true.param.df, by = 'param') |> 
+  mutate(`Abs Diff` = 100*abs(Mode - value)/value) |> 
+  select(-Mean,-Mode,-value) |> 
+  rename(Parameter = param,
+         `Correct Set Inital Value` = fixed_params) |>
+  select(`Correct Set Inital Value`,Parameter,`Abs Diff`,SD) |> 
+  kbl(booktabs = TRUE, 
+      caption = "The absolute percentage deviation and standard deviation of posterior distributions of parameters when two parameters' intial values were correctly set",
+      digits = 3,
+      longtable = TRUE)
+```
+
+```{r}
+fix_3_post |> 
+  group_by(fixed_params,param) |> 
+  summarise(Mean = weighted.mean(x = x, w = y),
+            Mode = x[which.max(y)],
+            SD = sqrt(weighted.mean(x = (x-Mean)^2, w = y))) |> 
+  ungroup() |> 
+  left_join(true.param.df, by = 'param') |> 
+  mutate(`Abs Diff` = 100*abs(Mode - value)/value) |> 
+  select(-Mean,-Mode,-value) |> 
+  rename(Parameter = param,
+         `Correct Set Inital Value` = fixed_params) |>
+  select(`Correct Set Inital Value`,Parameter,`Abs Diff`,SD) |> 
+  kbl(booktabs = TRUE, 
+      caption = "The absolute percentage deviation and standard deviation of posterior distributions of parameters when three parameters' intial values were correctly set",
+      digits = 3,
+      longtable = TRUE)
+```
+
+```{r}
+fix_4_post |> 
+  group_by(fixed_params,param) |> 
+  summarise(Mean = weighted.mean(x = x, w = y),
+            Mode = x[which.max(y)],
+            SD = sqrt(weighted.mean(x = (x-Mean)^2, w = y))) |> 
+  ungroup() |> 
+  left_join(true.param.df, by = 'param') |> 
+  mutate(`Abs Diff` = 100*abs(Mode - value)/value) |> 
+  select(-Mean,-Mode,-value) |> 
+  rename(Parameter = param,
+         `Correct Set Inital Value` = fixed_params) |>
+  select(`Correct Set Inital Value`,Parameter,`Abs Diff`,SD) |> 
+  kbl(booktabs = TRUE, 
+      caption = "The absolute percentage deviation and standard deviation of posterior distributions of parameters when four parameters' intial values were correctly set",
+      digits = 3)
+```

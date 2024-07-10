@@ -1,0 +1,34 @@
+@article{https://doi.org/10.1002/env.2798,
+author = {Serafini, Francesco and Lindgren, Finn and Naylor, Mark},
+title = {Approximation of Bayesian Hawkes process with inlabru},
+journal = {Environmetrics},
+volume = {34},
+number = {5},
+pages = {e2798},
+keywords = {approximate Bayesian inference, Hawkes process, INLA, inlabru},
+doi = {https://doi.org/10.1002/env.2798},
+url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/env.2798},
+eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1002/env.2798},
+abstract = {Abstract Hawkes process are very popular mathematical tools for modeling phenomena exhibiting a self-exciting or self-correcting behavior. Typical examples are earthquakes occurrence, wild-fires, drought, capture-recapture, crime violence, trade exchange, and social network activity. The widespread use of Hawkes process in different fields calls for fast, reproducible, reliable, easy-to-code techniques to implement such models. We offer a technique to perform approximate Bayesian inference of Hawkes process parameters based on the use of the R-package inlabru . The inlabru R-package, in turn, relies on the INLA methodology to approximate the posterior of the parameters. Our Hawkes process approximation is based on a decomposition of the log-likelihood in three parts, which are linearly approximated separately. The linear approximation is performed with respect to the mode of the parameters' posterior distribution, which is determined with an iterative gradient-based method. The approximation of the posterior parameters is therefore deterministic, ensuring full reproducibility of the results. The proposed technique only requires the user to provide the functions to calculate the different parts of the decomposed likelihood, which are internally linearly approximated by the R-package inlabru . We provide a comparison with the bayesianETAS  R-package which is based on an MCMC method. The two techniques provide similar results but our approach requires two to ten times less computational time to converge, depending on the amount of data.},
+year = {2023}
+}
+
+@ARTICLE{10.3389/fams.2023.1126759,
+
+AUTHOR={Naylor, Mark  and Serafini, Francesco  and Lindgren, Finn  and Main, Ian G. },
+
+TITLE={Bayesian modeling of the temporal evolution of seismicity using the ETAS.inlabru package},
+
+JOURNAL={Frontiers in Applied Mathematics and Statistics},
+
+VOLUME={9},
+
+YEAR={2023},
+
+URL={https://www.frontiersin.org/journals/applied-mathematics-and-statistics/articles/10.3389/fams.2023.1126759},
+
+DOI={10.3389/fams.2023.1126759},
+
+ISSN={2297-4687},
+
+ABSTRACT={<p>The epidemic type aftershock sequence (ETAS) model is widely used to model seismic sequences and underpins operational earthquake forecasting (OEF). However, it remains challenging to assess the reliability of inverted ETAS parameters for numerous reasons. For example, the most common algorithms just return point estimates with little quantification of uncertainty. At the same time, Bayesian Markov chain Monte Carlo implementations remain slow to run and do not scale well, and few have been extended to include spatial structure. This makes it difficult to explore the effects of stochastic uncertainty. Here, we present a new approach to ETAS modeling using an alternative Bayesian method, the integrated nested Laplace approximation (INLA). We have implemented this model in a new R-Package called <monospace>ETAS.inlabru</monospace>, which is built on the R packages R-INLA and <monospace>inlabru</monospace>. Our study has included extending these packages, which provided tools for modeling log-Gaussian Cox processes, to include the self-exciting Hawkes process that ETAS is a special case of. While we just present the temporal component here, the model scales to a spatio-temporal model and may include a variety of spatial covariates. This is a fast method that returns joint posteriors on the ETAS background and triggering parameters. Using a series of synthetic case studies, we explore the robustness of ETAS inversions using this method of inversion. We also included runnable notebooks to reproduce the figures in this article as part of the package's GitHub repository. We demonstrate that reliable estimates of the model parameters require that the catalog data contain periods of relative quiescence, as well as triggered sequences. We explore the robustness of the method under stochastic uncertainty in the training data and show that the method is robust to a wide range of starting conditions. We show how the inclusion of historic earthquakes prior to the modeled time window affects the quality of the inversion. Finally, we show that rate-dependent incompleteness of earthquake catalogs after large earthquakes have a significant and detrimental effect on the ETAS posteriors. We believe that the speed of the <monospace>inlabru</monospace> inversion, which includes a rigorous estimation of uncertainty, will enable a deeper exploration of how to use ETAS robustly for seismicity modeling and operational earthquake forecasting.</p>}}
