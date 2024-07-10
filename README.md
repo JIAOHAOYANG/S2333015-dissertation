@@ -1,1 +1,1 @@
-Project 1
+Dissertation Project 1
